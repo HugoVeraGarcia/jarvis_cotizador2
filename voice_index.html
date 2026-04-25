@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis - Asistente IA Realtime</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .page-logo {
+            text-align: center;
+            padding: 20px 0 10px 0;
+            background: #ffffff;
+        }
+
+        .page-logo img {
+            height: 55px;
+            /* Tamaño elegante para Desktop y Móvil */
+            width: auto;
+            object-fit: contain;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            height: calc(100vh - 85px);
+            /* Restando espacio del logo superior */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 15px 20px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            background-color: #ffffff;
+        }
+
+        .header h1 {
+            margin: 0 0 5px 0;
+            font-size: 22px;
+            color: #2563eb;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* Ajustes base que ya tenías */
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .mic-button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mic-button.active {
+            background-color: #ef4444;
+            box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        #statusText {
+            font-size: 15px;
+            color: #4b5563;
+            font-weight: 500;
+        }
+
+        .chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #f8fafc;
+        }
+
+        .message.bot .message-content {
+            background: #e2e8f0;
+            color: #1e293b;
+            align-self: flex-start;
+            padding: 12px 18px;
+            border-radius: 12px 12px 12px 0;
+            max-width: 85%;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .message.user .message-content {
+            background: #2563eb;
+            color: white;
+            align-self: flex-end;
+            padding: 12px 18px;
+            border-radius: 12px 12px 0 12px;
+            max-width: 85%;
+            margin-left: auto;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        /* RESPONSIVIDAD PARA CELULARES (Diseño líquido de borde a borde) */
+        @media screen and (max-width: 650px) {
+            .container {
+                box-shadow: none;
+                height: calc(100vh - 75px);
+                width: 100%;
+            }
+
+            .page-logo img {
+                height: 45px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .mic-button {
+                width: 80px;
+                /* Botón más grande y fácil de tapar en móvil */
+                height: 80px;
+                font-size: 32px;
+            }
+
+            .voice-controls {
+                padding: 15px 10px 25px 10px;
+                /* Más espacio abajo para el pulgar */
+            }
+
+            .chat-box {
+                padding: 15px;
+            }
+
+            .message.bot .message-content,
+            .message.user .message-content {
+                max-width: 92%;
+                /* Aprovechar más el ancho de pantalla en celular */
+                font-size: 16px;
+                /* Letra un poco más legible */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-logo">
+        <img src="logo.png" alt="Logo Empresa" onerror="this.style.display='none'">
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Jarvis Voz</h1>
+            <div class="subtitle">A su servicio, Señor Stark</div>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="empty-state" style="text-align: center; color: #6b7280; font-style: italic;">
+                Presiona el micrófono debajo para empezar a hablar...
+            </div>
+        </div>
+
+        <div class="voice-controls">
+            <button id="micBtn" class="mic-button">🎤</button>
+            <div id="statusText">Desconectado</div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let audioContext;
+        let micStream;
+        let scriptNode;
+
+        const micBtn = document.getElementById('micBtn');
+        const statusText = document.getElementById('statusText');
+        const chatBox = document.getElementById('chatBox');
+
+        let isRecording = false;
+
+        // Agregar burbujas de chat
+        function addMessage(text, role) {
+            const emptyState = document.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = text;
+
+            messageDiv.appendChild(contentDiv);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Conversión a Base64 para enviar
+        function bufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            let len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        // Sistema de reproducción secuencial perfecto (Evita que se corten las palabras rápidas como "Mil")
+        const audioQueue = [];
+        let isPlaying = false;
+        let nextStartTime = 0;
+        let activeSources = []; // Seguimiento de todos los audios programados
+
+        function playNextAudio() {
+            if (audioQueue.length === 0 || isPlaying || !audioContext) return;
+            isPlaying = true;
+
+            try {
+                const b64Data = audioQueue.shift();
+                const binaryString = window.atob(b64Data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Convertir PCM16 a Float32
+                const int16Array = new Int16Array(bytes.buffer);
+                const audioBuffer = audioContext.createBuffer(1, int16Array.length, 24000);
+                const channelData = audioBuffer.getChannelData(0);
+                for (let i = 0; i < int16Array.length; i++) {
+                    channelData[i] = int16Array[i] / 32768;
+                }
+
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                activeSources.push(source);
+
+                // Si el audio anterior ya pasó, reiniciamos el reloj para ahora mismo (+ leve holgura)
+                if (nextStartTime < audioContext.currentTime) {
+                    nextStartTime = audioContext.currentTime + 0.02;
+                }
+
+                source.start(nextStartTime);
+                nextStartTime += audioBuffer.duration;
+
+                source.onended = () => {
+                    activeSources = activeSources.filter(s => s !== source);
+                };
+
+                // Continuar vaciando la cola inmediatamente para programar el siguiente audio SIN pausar
+                isPlaying = false;
+                if (audioQueue.length > 0) playNextAudio();
+
+            } catch (e) {
+                console.error("Error reproduciendo audio websocket", e);
+                isPlaying = false;
+                playNextAudio();
+            }
+        }
+
+        async function startVoiceConversation() {
+            try {
+                // Forzar audición y micrófono a 24000Hz específicos de OpenAI
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                micStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: 24000,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                const source = audioContext.createMediaStreamSource(micStream);
+                // Extraer trozos de audio continuamente
+                scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+
+                source.connect(scriptNode);
+
+                // CELULARES: Evitar que el micrófono suene por tus propios parlantes creando un eco infinito
+                // y un bloqueo de Hardware local. Enviamos volumen 0 a los parlantes:
+                const dummyNode = audioContext.createGain();
+                dummyNode.gain.value = 0; // Mudo!
+                scriptNode.connect(dummyNode);
+                dummyNode.connect(audioContext.destination);
+
+                // Conectar
+                statusText.innerText = "Conectando al servidor...";
+                // Detección automática para producción web (wss://) o local (ws://)
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const host = window.location.host; // Extrae automáticamente el dominio web o localhost:8080
+                ws = new WebSocket(`${protocol}//${host}`);
+
+                ws.onopen = () => {
+                    statusText.innerText = "¡Conectado! Habla ahora...";
+                    micBtn.classList.add('active');
+                    isRecording = true;
+                    addMessage("Sistemas en línea. Listo para transmitir.", "bot");
+
+                    // Manejo del evento de recolección del microfono
+                    scriptNode.onaudioprocess = (audioProcessingEvent) => {
+                        if (!isRecording || ws.readyState !== WebSocket.OPEN) return;
+
+                        const inputBuffer = audioProcessingEvent.inputBuffer;
+                        const inputData = inputBuffer.getChannelData(0);
+
+                        // Convertir a int16 pcm
+                        const pcm16 = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            let val = Math.max(-1, Math.min(1, inputData[i]));
+                            pcm16[i] = val < 0 ? val * 0x8000 : val * 0x7FFF;
+                        }
+
+                        ws.send(JSON.stringify({
+                            type: 'input_audio',
+                            audio: bufferToBase64(pcm16.buffer)
+                        }));
+                    };
+                };
+
+                ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+
+                    // Transcripciones de Texto
+                    if (msg.type === 'transcript') {
+                        addMessage(msg.text, msg.role);
+                    }
+
+                    // INTERRUPCIÓN: detener bot si el usuario habla
+                    if (msg.type === 'speech_started') {
+                        audioQueue.length = 0;
+                        activeSources.forEach(s => { try { s.stop(); } catch (e) { } });
+                        activeSources = [];
+                        nextStartTime = 0;
+                        isPlaying = false;
+                    }
+
+                    // Audio del Bot
+                    if (msg.type === 'audio' && msg.audio) {
+                        audioQueue.push(msg.audio);
+                        playNextAudio();
+                    }
+
+                    // Errores
+                    if (msg.type === 'error') {
+                        // Mostramos la advertencia pero NO cerramos la conexión a la fuerza
+                        addMessage("⚠️ Info: " + msg.text, "bot");
+                    }
+                };
+
+                ws.onclose = () => {
+                    stopVoiceConversation();
+                };
+
+                ws.onerror = () => {
+                    statusText.innerText = "Error - Asegúrate de correr 'node server.js'";
+                    stopVoiceConversation();
+                };
+
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "Acepta los permisos de micrófono";
+            }
+        }
+
+        function stopVoiceConversation() {
+            if (scriptNode) scriptNode.disconnect();
+            if (micStream) micStream.getTracks().forEach(track => track.stop());
+            if (audioContext && audioContext.state !== 'closed') audioContext.close();
+            if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+
+            isRecording = false;
+            micBtn.classList.remove('active');
+            statusText.innerText = "Desconectado";
+        }
+
+        micBtn.addEventListener('click', () => {
+            if (!isRecording) {
+                startVoiceConversation();
+            } else {
+                stopVoiceConversation();
+            }
+        });
+    </script>
+</body>
+
+</html>

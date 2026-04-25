@@ -1,0 +1,335 @@
+{
+  "name": "cotizarOriginal",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=#Rol\nEres un asistente capaz de contestar preguntas del usuario basándote en información sobre Cotizaciones. Solo responderás sobre Cotizaciones.\n\n# Variables iniciales\n{\n  \"carton\": \"\",\n  \"ancho\": \"\",\n  \"largo\": \"\",\n  \"alto\": \"\",\n  \"cantidad\": \"\",\n  \"caja\": \"\",\n  \"costo_unitario\": \"\"\n}\n\n#Tareas\n- Tu función principal es responder a este mensaje {{ $json.chatInput }}\n\n#Herramientas:\n- Utiliza información de la herramienta carton para obtener el carton según el sector indicado por el cliente. Obtienes el carton de la columna carton y conservas el valor en carton.\n- Usa la herramienta coti para registrar los datos: carton, ancho, largo, alto, cantidad.\n- Usa la herramienta resultado para obtener el costo de la caja en columna CAJA y costo unitario en columna costo_unitario.\n\n# Orden de uso de herramientas\n1. carton\n2. coti\n3. resultado\n3. Nunca uses las herramientas en otro orden.  \n\n#Flujo preguntas\n\n- Solo Inicias con el saludo siguiente \"Hola me llaman Trupalito y soy un agente espcializado en cotizaciones de cajas estándar. \\n ¿Quieres obtener una cotización?\\n Deberás responder 5 preguntas. ¿De acuerdo?\" al inicio de la conversación o si no existe ningún contexto previo.\n\n- Si el usuario ya respondió algo (como “sí” o “ok” o similar), continúa con las siguientes preguntas sin repetir el saludo.\n\n- Si el cliente dice sí, ok o similar, preguntarás: \"¿El producto es liviano o pesado\" Solo puede responder una de esas dos opciones, si no responde liviano o pesado vuelves a hacer esta pregunta.\n\n  Confirmas indicando la palabra liviano o pesado. Buscas en la herramienta carton y guardas en memoria el resultado en variable carton.\n\n- Luego  preguntas:\n  ¿Cuál es el ancho, largo y alto de la caja? Las medidas en cm\", lo guardas en ancho, largo, alto.\n  Confirmas indicando las medidas (ejemplo ancho = 100 cm, largo 102 cm, alto =40 cm)\n  \n- preguntas ¿Cuál es el número de cajas a cotizar en unidades, por ejemplo 5,000 cajas?\" lo guardas en cantidad.\n\n- Utilizas la herramienta coti para ingresar los datos recogidos\n\n- Asegurate haber registrado la información en la herramienta coti, antes de utilizar la herramienta resultado.\n\n- Para obtener el costo de las cajas en la columna CAJA y el costo unitario en la columna costo_unitario, para el costo unitario utiliza 3 decimales, por ejemplo 3.765, pero para la CAJA utiliza 2 decimales. \n\n- Respondes al cliente el valor total es el valor que trae la variable CAJA soles y y costo unitario: costo_unitario soles.\n\n#Notas\n- Tus respuestas deben ser claras y concisas, no debes exceder los 200 caracteres",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        -128
+      ],
+      "id": "80af83a7-6aca-4f03-88ba-9da5c9e988dd",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        112
+      ],
+      "id": "64ea683f-5689-42b2-bde7-c08819ed22a0",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "nOTBpy6FGEIro2Ui",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -48,
+        112
+      ],
+      "id": "0d48b476-6074-4a42-926d-6dfc79a443fc",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE",
+          "mode": "list",
+          "cachedResultName": "cotizador caja",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 350510689,
+          "mode": "list",
+          "cachedResultName": "carton",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE/edit#gid=350510689"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        192,
+        208
+      ],
+      "id": "72e73478-a729-4fb1-ae8d-c1d51fc22a3c",
+      "name": "carton",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Gr00CFoAFCNnhD5O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE",
+          "mode": "list",
+          "cachedResultName": "cotizador caja",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2122226465,
+          "mode": "list",
+          "cachedResultName": "resultado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE/edit#gid=2122226465"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        304,
+        144
+      ],
+      "id": "5d39fcc8-1d44-4448-82b9-2228310feb4c",
+      "name": "resultado",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Gr00CFoAFCNnhD5O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE",
+          "mode": "list",
+          "cachedResultName": "cotizador caja",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 383655942,
+          "mode": "list",
+          "cachedResultName": "datos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE/edit#gid=383655942"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "2",
+            "cantidad": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('cantidad', ``, 'string') }}",
+            "carton": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('carton', ``, 'string') }}",
+            "ancho": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ancho', ``, 'string') }}",
+            "largo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('largo', ``, 'string') }}",
+            "alto": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('alto', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cantidad",
+              "displayName": "cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "carton",
+              "displayName": "carton",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ancho",
+              "displayName": "ancho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "largo",
+              "displayName": "largo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alto",
+              "displayName": "alto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        96,
+        112
+      ],
+      "id": "d9356512-3f97-461c-a740-2d6d8c0e3905",
+      "name": "coti",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Gr00CFoAFCNnhD5O",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        -128
+      ],
+      "id": "d4d8c004-95d9-4a23-9977-ea359f933d44",
+      "name": "When chat message received",
+      "webhookId": "dacd90b4-8247-4210-bc0f-324ac618e5a0"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "carton": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "resultado": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "coti": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9071f0fc-a6a9-4b42-9d20-418826c60420",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "efb86706986e88883fe5d1858f194214716e710e7710900115aa4e146f1230b1"
+  },
+  "id": "cB6BtFIJwDhu9Mxf",
+  "tags": []
+}

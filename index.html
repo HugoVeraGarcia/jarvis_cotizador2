@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trupalito 4.0 - Asistente IA</title>
+      
+
+</head>
+<link rel="stylesheet" href="styles.css">
+
+<body>
+    <div class="page-logo">
+        <img src="../public/logo.png" alt="Logo Trupal">
+    </div>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Trupalito 4.0 – Asistente IA</h1>
+            <div class="subtitle">Tu asistente inteligente siempre disponible</div>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="empty-state">
+                Escribe hola para comenzar la conversación...
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Escribe tu mensaje aquí..."
+                autocomplete="off"
+            >
+            <button id="sendButton">Enviar</button>
+        </div>
+    </div>
+
+    
+    <script>
+        const WEBHOOK_URL = 'https://hugovera.lat/webhook/dacd90b4-8247-4210-bc0f-324ac618e5a0/chat';
+
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        let isFirstMessage = true;
+        let sessionId = localStorage.getItem('trupalitoSessionId') || crypto.randomUUID();
+        localStorage.setItem('trupalitoSessionId', sessionId);
+
+        function addMessage(text, sender) {
+            if (isFirstMessage) {
+                chatBox.innerHTML = '';
+                isFirstMessage = false;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = text;
+
+            messageDiv.appendChild(contentDiv);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+            chatBox.appendChild(typingDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) typingIndicator.remove();
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            chatBox.appendChild(errorDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, 'user');
+            messageInput.value = '';
+            sendButton.disabled = true;
+
+            showTypingIndicator();
+
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chatInput: message,
+                        sessionId: sessionId,
+                        metadata: { source: 'Trupalito 4.0 Web' }
+                    })
+                });
+
+                removeTypingIndicator();
+
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                const botMessage = data.output?.[0]?.message ?? data.output ?? 'Sin respuesta';
+                addMessage(botMessage, 'bot');
+
+            } catch (error) {
+                console.error(error);
+                removeTypingIndicator();
+                showError('No se pudo conectar con el servidor n8n.');
+            } finally {
+                sendButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+        messageInput.focus();
+        </script>
+</body>
+</html>

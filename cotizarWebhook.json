@@ -1,0 +1,187 @@
+{
+  "name": "cotizarWebhooks",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "cartones2",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "wh-cartones",
+      "name": "Webhook Cartones",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -200
+      ],
+      "webhookId": "uuid-cartones-4b0d-9988-cb9a7d8c6b54"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "value": "19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE",
+          "mode": "list"
+        },
+        "sheetName": {
+          "value": 350510689,
+          "mode": "list"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          }
+        }
+      },
+      "id": "read-cartones",
+      "name": "Leer Cartones",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst cartones = items.map(item => item.json.carton).filter(c => c);\nreturn [{ json: { cantidad_total: cartones.length, lista_cartones: cartones } }];"
+      },
+      "id": "code-group",
+      "name": "Agrupar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cotizar2",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "wh-cotizar",
+      "name": "Webhook Cotizar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "uuid-cotizar-4b0d-9988-cb9a7d8c6b54"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "value": "19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE",
+          "mode": "list"
+        },
+        "sheetName": {
+          "value": 383655942,
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "2",
+            "cantidad": "={{ $json.body.cantidad }}",
+            "carton": "={{ $json.body.carton }}",
+            "ancho": "={{ $json.body.ancho }}",
+            "largo": "={{ $json.body.largo }}",
+            "alto": "={{ $json.body.alto }}"
+          },
+          "matchingColumns": [
+            "id"
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-datos",
+      "name": "Escribir Datos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "value": "19HIeNFVMl-LdUOF-Ve2W-dweqnfFANqqH6kpMLC8QJE",
+          "mode": "list"
+        },
+        "sheetName": {
+          "value": 2122226465,
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "read-resultado",
+      "name": "Leer Resultado",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Cartones": {
+      "main": [
+        [
+          {
+            "node": "Leer Cartones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Cartones": {
+      "main": [
+        [
+          {
+            "node": "Agrupar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Cotizar": {
+      "main": [
+        [
+          {
+            "node": "Escribir Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escribir Datos": {
+      "main": [
+        [
+          {
+            "node": "Leer Resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "e2ba34dc-0a2b-4560-a1cd-123456789abc"
+}
