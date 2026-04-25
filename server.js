@@ -68,23 +68,24 @@ wss.on('connection', (clientWs) => {
         const sessionUpdate = {
             type: "session.update",
             session: {
-                instructions: `Eres Jarvis, un sistema de inteligencia avanzada al mando de cotizaciones de cajas.
-Sirves rigurosamente al cliente por voz para darle el costo de sus cajas calculándolo rigurosamente.
+                instructions: `Eres Jarvis, el mayordomo inteligente de una cartonera.
+Tu objetivo es dar cotizaciones exactas.
 
-REGLAS DE CONVERSACIÓN:
-1. En tu primera interacción debes saludar OBLIGATORIAMENTE con estas palabras exactas: "${greeting} SEÑOR STARK. ¿Desea obtener una cotización de cajas hoy?".
-2. Jamás hagas dos preguntas juntas. Ve paso por paso.
-3. El primer dato a obtener es el material. Hazle ESTA pregunta exacta: "¿Sabe qué cartón utilizar o le listo los cartones activos?". Evita darle ejemplos sueltos si no los has obtenido del sistema.
-4. OBLIGATORIO: Si el usuario responde que desea conocer los cartones activos, no sabe cuál utilizar, ejecuta INMEDIATAMENTE la herramienta "obtener_cartones" para traerlos de la base de datos.
-IMPORTANTE: Lee las opciones obtenidas. Si recibes una lista larga (ej. 20 cartones), dile de una manera amable: "Contamos con los siguientes diseños disponibles..." y empiézale a listar algunos. Si te devuelve 1 solo, dile: "Solo tenemos disponible [nombre]". No te inventes cartones.
-5. Luego pregúntale ancho, largo y alto (en centímetros).
-6. Luego pregunta la cantidad de cajas.
-7. Luego pregunta el número de colores que llevará el diseño de la caja.
-8. Luego pregunta si la caja requiere troquel (sí o no).
-9. Una vez tengas todas las medidas, cantidad, tipo de cartón, colores y si lleva troquel, llama a la herramienta "cotizar_cajas".
-10. Comunica los resultados finales de COSTO TOTAL y COSTO UNITARIO indicando explícitamente que la moneda son "Soles" (por ejemplo: "300 soles"). Jamás uses pesos u otra moneda. Y pregúntale amablemente si desea alguna otra cosa.
-11. Mantén siempre respuestas de voz cortas y elegantes, con el tono de un mayordomo inteligente. Di los números de forma amigable.
-12. INTERRUPCIONES: Si el usuario te dice "alto", "no", o "espera", guarda absoluto silencio a partir de ese momento y espera pacientemente a que vuelva a hablar o dé nuevas instrucciones.`,
+FLUJO OBLIGATORIO:
+1. Saluda: "${greeting} SEÑOR STARK. ¿Desea una cotización?".
+2. Pregunta: "¿Sabe qué cartón usar o le listo los activos?".
+3. Si el usuario no sabe o quiere la lista, ejecuta "obtener_cartones" SIEMPRE. No inventes nombres.
+4. Pide: Ancho, largo y alto (cm).
+5. Pide: Cantidad.
+6. Pide: Número de colores.
+7. Pide: ¿Lleva troquel? (sí/no).
+8. Con todo lo anterior, ejecuta "cotizar_cajas".
+9. Di el Costo Total y Unitario en SOLES.
+
+REGLAS:
+- Respuestas cortas y elegantes.
+- No hagas dos preguntas a la vez.
+- Si te interrumpen con "espera" o "no", guarda silencio.`,
                 voice: "alloy", // Voz sintética amigable de OpenAI
                 tools: [
                     {
@@ -146,10 +147,14 @@ IMPORTANTE: Lee las opciones obtenidas. Si recibes una lista larga (ej. 20 carto
             if (event.error?.code === 'conversation_already_has_active_response' || event.error?.message?.includes('no active response')) {
                 return;
             }
-            console.error("🚨 Error de OpenAI:", event.error);
+            console.error("🚨 Error de OpenAI:", JSON.stringify(event.error, null, 2));
             if (clientWs.readyState === WebSocket.OPEN) {
                 clientWs.send(JSON.stringify({ type: 'error', text: event.error.message }));
             }
+        }
+
+        if (event.type === 'session.updated') {
+            console.log("✅ Configuración de sesión aplicada con éxito.");
         }
 
         // BARGE-IN: Si detecta que el usuario interrumpió hablando ("alto", "no", "espera"),
@@ -190,7 +195,7 @@ IMPORTANTE: Lee las opciones obtenidas. Si recibes una lista larga (ej. 20 carto
             const functionName = event.name;
             const args = JSON.parse(event.arguments || '{}');
 
-            console.log(`[Llamando a n8n] Ejecutando: ${functionName} con parámetros:`, args);
+            console.log(`[Sistema] Ejecutando: ${functionName} con parámetros:`, args);
 
             let result = {};
             try {
@@ -224,7 +229,7 @@ IMPORTANTE: Lee las opciones obtenidas. Si recibes una lista larga (ej. 20 carto
                 result = { error: "Lo siento, tuve un problema conectándome a la libreta de cotizaciones. ¿Verificaste que los webhooks estén en Producción?" };
             }
 
-            console.log(`[Resultado n8n] ${functionName} -> Oculto en el log por longitud, devolviéndolo al Agente...`);
+            console.log(`[Sistema] ${functionName} -> Oculto en el log por longitud, devolviéndolo al Agente...`);
 
             // NOTA: Se eliminó el response.cancel aquí porque interfería con la respuesta
             // que debe generarse justo después de devolver el resultado de la herramienta.
