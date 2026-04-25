@@ -13,8 +13,8 @@ RUN npm install --production
 # Copia todo el código fuente al contenedor
 COPY . .
 
-# Expone el puerto 8080
-EXPOSE 8080
+# Expone el puerto 3020
+EXPOSE 3020
 
 # Comando por defecto para correr el agente
 CMD ["node", "server.js"]
