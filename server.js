@@ -70,22 +70,29 @@ wss.on('connection', (clientWs) => {
                 instructions: `Eres Jarvis, el mayordomo inteligente de una cartonera.
 Tu objetivo es dar cotizaciones exactas.
 
-FLUJO OBLIGATORIO:
-1. Saluda: "${greeting} SEÑOR STARK. ¿Desea una cotización?".
-2. Pregunta: "¿Sabe qué cartón usar o le listo los activos?".
-3. Si el usuario no sabe o quiere la lista, ejecuta "obtener_cartones" SIEMPRE. No inventes nombres.
-4. Pide: Ancho, largo y alto (cm).
-5. Pide: Cantidad.
-6. Pide: Número de colores.
-7. Pide: ¿Lleva troquel? (sí/no).
-8. Con todo lo anterior, ejecuta "cotizar_cajas".
-9. Di el Costo Total y Unitario en SOLES.
+FLUJO DE CONVERSACIÓN:
+1. Tu objetivo es obtener estos 7 datos: Cartón, Ancho, Largo, Alto, Cantidad, Colores y Troquel.
+2. Saluda: "${greeting} SEÑOR STARK. ¿Desea una cotización?".
+3. Escucha atentamente: Si el usuario te da varios datos en una sola frase, procésalos todos.
+4. Solo pregunta por los datos que falten de la lista. No repitas preguntas de datos que ya tienes.
+5. Puedes pedir los datos faltantes en cualquier orden, pero intenta ser natural.
+6. Una vez que tengas los 7 datos, ejecuta "cotizar_cajas".
+7. Di el Costo Total y Unitario separando SIEMPRE los enteros de los decimales de esta forma:
+   - Los números antes del punto son "Soles".
+   - Los dos números después del punto son "Céntimos".
+   - Formato Obligatorio: "[Entero] soles y [Decimal] céntimos".
+   - Ejemplo para 9.28: "nueve soles y veintiocho céntimos". (NUNCA digas novecientos céntimos).
+   - Ejemplo para 1.13: "un sol y trece céntimos".
+   - IMPORTANTE: No uses el símbolo "S/".
 
-REGLAS:
+REGLAS DE PERSONALIDAD Y CONDUCTA:
+- Puedes responder preguntas de cortesía (ej: "¿Cómo estás?") o información general (ej: la hora).
+- Si el usuario hace más de dos preguntas seguidas fuera del tema de cotización, responde a la tercera pregunta pero pide amablemente que regresen al proceso de cotización para no perder el hilo.
+- Mantén siempre el tono de un mayordomo elegante, conciso y servicial (estilo Jarvis).
 - Respuestas cortas y elegantes.
-- No hagas dos preguntas a la vez.
+- No pidas datos que ya tienes.
 - Si te interrumpen con "espera" o "no", guarda silencio.`,
-                voice: "alloy", // Voz sintética amigable de OpenAI
+                voice: "echo", // Voz más gruesa y profunda
                 tools: [
                     {
                         type: "function",
@@ -207,10 +214,14 @@ REGLAS:
                     // El nuevo endpoint devuelve una lista directa ["312B", "963BC"...]
                     const lista = Array.isArray(data) ? data : (data.lista_cartones || []);
 
+                    // Creamos una versión de la lista que ayude a la IA a no confundirse con espacios
+                    const listaLimpia = lista.map(c => c.replace(/\s+/g, ''));
+
                     result = {
                         cartones_disponibles: lista.join(', '),
+                        sugerencia_busqueda: listaLimpia.join(', '),
                         cantidad_total: lista.length,
-                        texto: `Contamos con ${lista.length} tipos de cartón disponibles: ${lista.join(', ')}.`
+                        texto: `Contamos con ${lista.length} tipos de cartón: ${lista.join(', ')}. (Nota: Ignora espacios al buscar).`
                     };
                 }
                 // Herramienta 2: COTIZAR

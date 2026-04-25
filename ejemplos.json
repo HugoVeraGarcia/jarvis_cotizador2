@@ -1,0 +1,92 @@
+[
+  {
+    "ejemplo": "Aceites",
+    "descripcion": "ECCJ130044 CAJA P/ACEITE MAXI 12X900ML",
+    "carton": "121C",
+    "ancho": 23.8,
+    "largo": 31.5,
+    "alto": 25.4,
+    "colores": 3,
+    "troquel": true
+  },
+  {
+    "ejemplo": "Bebidas y Licores",
+    "descripcion": "EG42005063 CAJA VICTORIA 31",
+    "carton": "121C",
+    "ancho": 18,
+    "largo": 39,
+    "alto": 18.5,
+    "colores": 2,
+    "troquel": true
+  },
+  {
+    "ejemplo": "Café e Infusiones",
+    "descripcion": "43793889 NESCAFE KIRMA DOY PACK",
+    "carton": "312C",
+    "ancho": 24,
+    "largo": 48,
+    "alto": 21.5,
+    "colores": 2,
+    "troquel": false
+  },
+  {
+    "ejemplo": "Condimentos y Salsas",
+    "descripcion": "1509895 CCC SALSA BOLOGNESA",
+    "carton": "411C",
+    "ancho": 23,
+    "largo": 23,
+    "alto": 16,
+    "colores": 3,
+    "troquel": false
+  },
+  {
+    "ejemplo": "Fideos y Pastas",
+    "descripcion": "*BQ*5033097 CAJA TABLETA PASTA S/A 300 G",
+    "carton": "B411C",
+    "ancho": 24.4,
+    "largo": 36,
+    "alto": 17.8,
+    "colores": 3,
+    "troquel": true
+  },
+  {
+    "ejemplo": "Galletas y Snacks",
+    "descripcion": "EN1011910122 CJ GAL 103 SODA DIA 100 PQT",
+    "carton": "121C",
+    "ancho": 22.5,
+    "largo": 25,
+    "alto": 29.5,
+    "colores": 1,
+    "troquel": false
+  },
+  {
+    "ejemplo": "jabón liquido",
+    "descripcion": "CAJA JABON LIQUIDO SUPER KIDS",
+    "carton": "312C",
+    "ancho": 28,
+    "largo": 32.5,
+    "alto": 14.3,
+    "colores": 2,
+    "troquel": true
+  },
+  {
+    "ejemplo": "Limpieza y Detergentes",
+    "descripcion": "CAJA EMB. ACNOMEL JABON X 100G X 48UND",
+    "carton": "411C",
+    "ancho": 25,
+    "largo": 27.2,
+    "alto": 15.2,
+    "colores": 3,
+    "troquel": false
+  },
+  {
+    "ejemplo": "Panadería y Repostería",
+    "descripcion": "CAJA P/PANETON BOLSA SAO",
+    "carton": "312C",
+    "ancho": 38.5,
+    "largo": 58.5,
+    "alto": 23.5,
+    "colores": 1,
+    "troquel": true
+  }
+]
