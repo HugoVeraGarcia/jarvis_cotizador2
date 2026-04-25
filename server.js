@@ -41,9 +41,8 @@ const isDocker = fs.existsSync('/.dockerenv');
 const baseUrl = isDocker ? 'http://n8n:5678' : 'https://hugovera.lat';
 
 // Estos son los webhooks dinámicos auto-ajustables
-// Estos son los webhooks dinámicos auto-ajustables
-const CARTONES_API_URL = "https://cotizador.hugovera.lat/api/cartones";
-const COTIZAR_API_URL = "https://cotizador.hugovera.lat/api/cotizar";
+const CARTONES_API_URL = process.env.CARTONES_API_URL || "https://cotizador.hugovera.lat/api/cartones";
+const COTIZAR_API_URL = process.env.COTIZAR_API_URL || "https://cotizador.hugovera.lat/api/cotizar";
 
 wss.on('connection', (clientWs) => {
     console.log("Cliente frontend conectado. Abriendo conexión a OpenAI Realtime API...");
