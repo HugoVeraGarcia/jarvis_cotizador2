@@ -272,8 +272,8 @@ REGLAS:
         if (openaiWs.readyState === WebSocket.OPEN) openaiWs.close();
     });
 
-    openaiWs.on('close', () => {
-        console.log("Conexión con OpenAI Realtime API cerrada.");
+    openaiWs.on('close', (code, reason) => {
+        console.log(`❌ Conexión con OpenAI Realtime API cerrada. Código: ${code}, Razón: ${reason.toString()}`);
         if (clientWs.readyState === WebSocket.OPEN) clientWs.close();
     });
 });
