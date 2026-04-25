@@ -47,8 +47,8 @@ const COTIZAR_API_URL = process.env.COTIZAR_API_URL || "https://cotizador.hugove
 wss.on('connection', (clientWs) => {
     console.log("Cliente frontend conectado. Abriendo conexión a OpenAI Realtime API...");
 
-    // Cambiamos al modelo mini-realtime que pide menos nivel (Tier) de acceso a OpenAI
-    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview', {
+    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini-realtime-preview';
+    const openaiWs = new WebSocket(`wss://api.openai.com/v1/realtime?model=${model}`, {
         headers: {
             "Authorization": "Bearer " + OPENAI_API_KEY,
             "OpenAI-Beta": "realtime=v1"
