@@ -60,3 +60,15 @@ Si algo sale mal o la página no carga, ejecuta esto para ver los errores intern
 docker logs jarvis-cotizador --tail 20
 ```
 La última línea debería confirmar que está corriendo en `http://localhost:3015`.
+
+---
+
+## Cambiar variables en el `.env` (ej. cambiar modelo de OpenAI)
+
+Si modificas el archivo `.env` en tu servidor (por ejemplo, con `nano .env` para cambiar `OPENAI_MODEL`), **NO** basta con reiniciar el contenedor. Docker solo lee el `.env` cuando el contenedor se crea por primera vez.
+
+Para aplicar tus cambios del `.env`, solo necesitas ejecutar el **Paso 3** y el **Paso 4**:
+1. `docker rm -f jarvis-cotizador`
+2. Pegar de nuevo el comando completo de `docker run ...` 
+
+*(No es necesario hacer `git pull` ni `docker build` porque el código fuente no cambió, solo las variables de entorno).*
