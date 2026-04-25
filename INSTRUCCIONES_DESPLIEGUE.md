@@ -69,6 +69,18 @@ Si modificas el archivo `.env` en tu servidor (por ejemplo, con `nano .env` para
 
 Para aplicar tus cambios del `.env`, solo necesitas ejecutar el **Paso 3** y el **Paso 4**:
 1. `docker rm -f jarvis-cotizador`
-2. Pegar de nuevo el comando completo de `docker run ...` 
+2. Pegar de nuevo el comando completo:
+```bash
+docker run -d \
+  --name jarvis-cotizador \
+  -p 3015:3015 \
+  --env-file .env \
+  -e PORT=3015 \
+  -l caddy=jarvis.hugovera.lat \
+  -l caddy.reverse_proxy="{{upstreams 3015}}" \
+  --network n8n_network \
+  --restart unless-stopped \
+  cotivoice2
+```
 
 *(No es necesario hacer `git pull` ni `docker build` porque el código fuente no cambió, solo las variables de entorno).*
