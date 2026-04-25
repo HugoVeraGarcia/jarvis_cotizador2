@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const PORT = process.env.PORT || 3020;
+const PORT = process.env.PORT || 3015;
 
 // Motor HTTP estático incorporado para saltarnos los bloqueos de micrófonos locales de Chrome
 const server = http.createServer((req, res) => {
