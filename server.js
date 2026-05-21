@@ -47,11 +47,10 @@ const COTIZAR_API_URL = process.env.COTIZAR_API_URL || "https://cotizador.hugove
 wss.on('connection', (clientWs) => {
     console.log("Cliente frontend conectado. Abriendo conexión a OpenAI Realtime API...");
 
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini-realtime-preview';
+    const model = process.env.OPENAI_MODEL || 'gpt-realtime-mini';
     const openaiWs = new WebSocket(`wss://api.openai.com/v1/realtime?model=${model}`, {
         headers: {
-            "Authorization": "Bearer " + OPENAI_API_KEY,
-            "OpenAI-Beta": "realtime=v1"
+            "Authorization": "Bearer " + OPENAI_API_KEY
         }
     });
 
@@ -67,6 +66,7 @@ wss.on('connection', (clientWs) => {
         const sessionUpdate = {
             type: "session.update",
             session: {
+                type: "realtime",
                 instructions: `Eres Jarvis, el mayordomo inteligente de una cartonera.
 Tu objetivo es dar cotizaciones exactas.
 
@@ -92,7 +92,6 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
 - Respuestas cortas y elegantes.
 - No pidas datos que ya tienes.
 - Si te interrumpen con "espera" o "no", guarda silencio.`,
-                voice: "echo", // Voz más gruesa y profunda
                 tools: [
                     {
                         type: "function",
@@ -124,8 +123,10 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
                     }
                 ],
                 tool_choice: "auto",
-                input_audio_format: "pcm16",
-                output_audio_format: "pcm16",
+                audio: {
+                    input: { format: "pcm16" },
+                    output: { format: "pcm16", voice: "echo" }
+                },
                 input_audio_transcription: { model: "whisper-1" },
                 turn_detection: {
                     type: "server_vad",
@@ -163,27 +164,21 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
             console.log("✅ Configuración de sesión aplicada con éxito.");
         }
 
-        // BARGE-IN: Si detecta que el usuario interrumpió hablando ("alto", "no", "espera"),
-        // detiene el audio en el frontend Y cancela la respuesta activa en OpenAI
+        // BARGE-IN POR VOZ INMEDIATO DESACTIVADO: Ya no interrumpimos por cualquier ruido de fondo.
+        // Ahora solo registramos el inicio de voz y esperamos a procesar la palabra (Opción C).
         if (event.type === 'input_audio_buffer.speech_started') {
-            if (clientWs.readyState === WebSocket.OPEN) {
-                clientWs.send(JSON.stringify({ type: 'speech_started' }));
-            }
-            // Cancelar lo que Jarvis estaba diciendo para que no siga hablando encima del usuario
-            if (openaiWs.readyState === WebSocket.OPEN) {
-                openaiWs.send(JSON.stringify({ type: 'response.cancel' }));
-            }
+            console.log("[Sistema] Detección de sonido/voz (Barge-in inmediato ignorado para evitar interrupción por ruido)");
         }
 
         // RECIBIR AUDIO: Si el de OpenAI nos está devolviendo audio generado, enviarlo al frontend al instante
-        if (event.type === 'response.audio.delta') {
+        if (event.type === 'response.audio.delta' || event.type === 'response.output_audio.delta') {
             if (clientWs.readyState === WebSocket.OPEN) {
                 clientWs.send(JSON.stringify({ type: 'audio', audio: event.delta }));
             }
         }
 
         // TRANSCRIPCIONES (para mostrar el chat de texto en UI)
-        if (event.type === 'response.audio_transcript.done') {
+        if (event.type === 'response.audio_transcript.done' || event.type === 'response.output_audio_transcript.done') {
             if (clientWs.readyState === WebSocket.OPEN) {
                 clientWs.send(JSON.stringify({ type: 'transcript', role: 'bot', text: event.transcript }));
             }
@@ -192,6 +187,23 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
         if (event.type === 'conversation.item.input_audio_transcription.completed') {
             if (clientWs.readyState === WebSocket.OPEN) {
                 clientWs.send(JSON.stringify({ type: 'transcript', role: 'user', text: event.transcript }));
+            }
+
+            const transcript = (event.transcript || '').toLowerCase().trim();
+            console.log(`[Transcripción Usuario] ${transcript}`);
+
+            // INTERRUPCIÓN SELECTIVA (Opción C): Solo detener si dice palabras clave de parada
+            const palabrasParada = ['alto', 'detente', 'para', 'cállate', 'silencio', 'stop', 'espera'];
+            const contienePalabraParada = palabrasParada.some(palabra => transcript.includes(palabra));
+
+            if (contienePalabraParada) {
+                console.log(`[Interrupción] Palabra clave detectada en: "${transcript}". Cancelando reproducción actual.`);
+                if (openaiWs.readyState === WebSocket.OPEN) {
+                    openaiWs.send(JSON.stringify({ type: 'response.cancel' }));
+                }
+                if (clientWs.readyState === WebSocket.OPEN) {
+                    clientWs.send(JSON.stringify({ type: 'speech_started' })); // Le avisa al frontend que limpie su cola de audio inmediatamente
+                }
             }
         }
 
