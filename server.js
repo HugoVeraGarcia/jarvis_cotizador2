@@ -123,16 +123,29 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
                     }
                 ],
                 tool_choice: "auto",
+                output_modalities: ["audio"],
                 audio: {
-                    input: { format: "pcm16" },
-                    output: { format: "pcm16", voice: "echo" }
-                },
-                input_audio_transcription: { model: "whisper-1" },
-                turn_detection: {
-                    type: "server_vad",
-                    threshold: 0.85, // EXTREMO: Filtra ruidos de fondo suaves o estática (antes 0.5)
-                    prefix_padding_ms: 300,
-                    silence_duration_ms: 800 // EXTREMO: Espera más rato de silencio real antes de considerar la frase terminada (antes 200)
+                    input: {
+                        format: {
+                            type: "audio/pcm",
+                            rate: 24000
+                        },
+                        transcription: { model: "whisper-1" },
+                        turn_detection: {
+                            type: "server_vad",
+                            threshold: 0.85,
+                            prefix_padding_ms: 300,
+                            silence_duration_ms: 800,
+                            create_response: true
+                        }
+                    },
+                    output: {
+                        format: {
+                            type: "audio/pcm",
+                            rate: 24000
+                        },
+                        voice: "echo"
+                    }
                 }
             }
         };
@@ -164,10 +177,16 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
             console.log("✅ Configuración de sesión aplicada con éxito.");
         }
 
-        // BARGE-IN POR VOZ INMEDIATO DESACTIVADO: Ya no interrumpimos por cualquier ruido de fondo.
-        // Ahora solo registramos el inicio de voz y esperamos a procesar la palabra (Opción C).
+        // BARGE-IN: Si detecta que el usuario interrumpió hablando,
+        // detiene el audio en el frontend Y cancela la respuesta activa en OpenAI
         if (event.type === 'input_audio_buffer.speech_started') {
-            console.log("[Sistema] Detección de sonido/voz (Barge-in inmediato ignorado para evitar interrupción por ruido)");
+            if (clientWs.readyState === WebSocket.OPEN) {
+                clientWs.send(JSON.stringify({ type: 'speech_started' }));
+            }
+            // Cancelar lo que Jarvis estaba diciendo para que no siga hablando encima del usuario
+            if (openaiWs.readyState === WebSocket.OPEN) {
+                openaiWs.send(JSON.stringify({ type: 'response.cancel' }));
+            }
         }
 
         // RECIBIR AUDIO: Si el de OpenAI nos está devolviendo audio generado, enviarlo al frontend al instante
@@ -188,23 +207,7 @@ REGLAS DE PERSONALIDAD Y CONDUCTA:
             if (clientWs.readyState === WebSocket.OPEN) {
                 clientWs.send(JSON.stringify({ type: 'transcript', role: 'user', text: event.transcript }));
             }
-
-            const transcript = (event.transcript || '').toLowerCase().trim();
-            console.log(`[Transcripción Usuario] ${transcript}`);
-
-            // INTERRUPCIÓN SELECTIVA (Opción C): Solo detener si dice palabras clave de parada
-            const palabrasParada = ['alto', 'detente', 'para', 'cállate', 'silencio', 'stop', 'espera'];
-            const contienePalabraParada = palabrasParada.some(palabra => transcript.includes(palabra));
-
-            if (contienePalabraParada) {
-                console.log(`[Interrupción] Palabra clave detectada en: "${transcript}". Cancelando reproducción actual.`);
-                if (openaiWs.readyState === WebSocket.OPEN) {
-                    openaiWs.send(JSON.stringify({ type: 'response.cancel' }));
-                }
-                if (clientWs.readyState === WebSocket.OPEN) {
-                    clientWs.send(JSON.stringify({ type: 'speech_started' })); // Le avisa al frontend que limpie su cola de audio inmediatamente
-                }
-            }
+            console.log(`[Transcripción Usuario] ${(event.transcript || '').trim()}`);
         }
 
         // TOOL EXECUTION: Si la inteligencia de la llamada determina que es hora de ejecutar el Webhook
